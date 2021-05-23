@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    .box {
+        position: relative;
+        background-color: pink;
+        width: 100%;
+
+    }
+
+    #cur {
+        width: 3px;
+        height: 3px;
+        /* outline: 2px solid #535353; */
+        margin-left: -1px;
+        margin-top: -1px;
+        position: absolute;
+    }
+
+    #cover {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: antiquewhite;
+        /* cover作为遮罩挡住了canvas，使用这个可以穿透遮罩，点击到下面的元素 */
+        /* pointer-events: none; */
+    }
+
+    .colorside {
+        width: 100px;
+        height: 100%;
+        background-color: aqua;
+    }
+
+    .container {
+        position: relative;
+    }
+
+    .row {
+
+        position: absolute;
+        display: flex;
+        width: 100%;
+        height: 100%;
+    }
+
+    #delBtn {
+        display: block;
+        text-decoration: none;
+        position: relative;
+        margin-top: 50px;
+        line-height: 50px;
+        height: 50px;
+        text-align: center;
+    }
+
+    #colorslice {
+        width: 50%;
+    }
+</style>
+
+<body>
+    <div class="row">
+        <div id="colorline"></div>
+        <div class="container">
+            <canvas class="box" id="show" width="1500px" height="800px"></canvas>
+            <div class="cover" id='cover'></div>
+            <em id="cur"></em>
+        </div>
+    </div>
+
+
+    <script>
+        var x = 0;
+        var y = 0;
+        var z = 0;
+        var rgbStr;
+        var box = document.querySelector('.box');
+        var container = document.querySelector('.container');
+        var cur = document.getElementById('cur');
+        var rgbValue = document.getElementById('rgb_value');
+        var colorside = document.querySelector('.colorside');
+        var row = document.querySelector('.row')
+        var colorline = document.getElementById('colorline')
+        // box.addEventListener('mousemove', function (e) {
+        //     e = e || window.event;
+        //     x = e.pageX - this.offsetLeft;
+        //     y = e.pageY - this.offsetTop;
+        //     //滚动滑轮触发scrollFunc方法  //ie 谷歌
+        //     window.onmousewheel = document.onmousewheel = function (es) {
+        //         es = es || window.event;
+        //         var wd = es.wheelDelta;
+        //         if (wd > 0) {
+        //             z--;
+        //         } else {
+        //             z++;
+        //         }
+        //     };
+        //     //console.log('x坐标是' + x + ',y坐标是' + y + "z坐标是" + z)
+        // })
+
+        var show = document.getElementById("show");
+        var cover = document.getElementById('cover');
+
+        //十六进制颜色值的正则表达式
+        var reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;
+        //颜色转换
+        function colorHex(string) {
+            if (/^(rgb|RGB)/.test(string)) {
+                var aColor = string.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");
+                var strHex = "#";
+                for (var i = 0; i < aColor.length; i++) {
+                    var hex = Number(aColor[i]).toString(16);
+                    if (hex === "0") {
+                        hex += hex;
+                    }
+                    strHex += hex;
+                }
+                if (strHex.length !== 7) {
+                    strHex = string;
+                }
+                return strHex;
+            } else if (reg.test(string)) {
+                var aNum = string.replace(/#/, "").split("");
+                if (aNum.length === 6) {
+                    return string;
+                } else if (aNum.length === 3) {
+                    var numHex = "#";
+                    for (var i = 0; i < aNum.length; i += 1) {
+                        numHex += (aNum[i] + aNum[i]);
+                    }
+                    return numHex;
+                }
+            } else {
+                return string;
+
+            }
+        }
+
+        //监听点击事件
+        container.addEventListener('click', function (e) {
+            console.log("click:" + rgbStr);
+            //判断颜色深浅
+            //rgb(245,232,11)
+            var temp = rgbStr.slice(4, -1).split(',')
+            var r = Number(temp[0])
+            var g = Number(temp[1])
+            var b = Number(temp[2])
+            if (r * 0.299 + g * 0.578 + b * 0.114 >= 192) { //浅色
+                var textcolor = "#000";
+            } else { //深色
+                var textcolor = "#fff";
+            }
+
+            //var div = createDiv(id,rgbStr);
+            var div = document.createElement('div');
+            div.id = "colorslice";
+            var text = document.createElement('h5');
+            text.style.marginTop = "200px";
+            div.style.color = textcolor;
+            div.style.textAlign = 'center';
+            var hexcolor = colorHex(rgbStr);
+            var textNode = document.createTextNode(hexcolor);
+            text.appendChild(textNode);
+            div.appendChild(text);
+
+            //添加删除按钮
+            var delBtn = document.createElement('a');
+            delBtn.href = "#";
+            delBtn.id = "delBtn";
+            delBtn.style.color = textcolor;
+            var deltext = document.createTextNode("del");
+            delBtn.onclick = function (e) {
+                console.log(e.target.parentNode);
+                row.removeChild(e.target.parentNode)
+            }
+            delBtn.appendChild(deltext);
+            div.appendChild(delBtn);
+
+            //设置配色条的颜色
+            div.style.backgroundColor = rgbStr;
+            //div.style.width = "100px";
+
+            let firstChild = row.firstChild
+            //row.insertBefore(div, firstChild)
+            row.appendChild(div);
+            div.style.backgroundColor = rgbStr;
+        }, false);
+
+        //console.log(show.width)
+        if (show.getContext) {
+            var context = show.getContext('2d');
+            //画彩虹条
+            var gradientBar = context.createLinearGradient(0, show.height, show.width, show.height);
+            gradientBar.addColorStop(0, '#f00');
+            gradientBar.addColorStop(1 / 6, '#f0f');
+            gradientBar.addColorStop(2 / 6, '#00f');
+            gradientBar.addColorStop(3 / 6, '#0ff');
+            gradientBar.addColorStop(4 / 6, '#0f0');
+            gradientBar.addColorStop(5 / 6, '#ff0');
+            gradientBar.addColorStop(1, '#f00');
+
+            //白色透明黑色，明暗度实现
+            var lightToDark = context.createLinearGradient(0, 0, 0, show.height);
+            lightToDark.addColorStop(0, "#fff");
+            lightToDark.addColorStop(1 / 2, 'rgba(255,255,255,0)');
+            lightToDark.addColorStop(1, '#000');
+
+
+            context.fillStyle = gradientBar;
+            context.fillRect(0, 0, show.width, show.width);
+
+            context.fillStyle = lightToDark;
+            context.fillRect(0, 0, show.width, show.width);
+
+            cover.addEventListener('mouseover', function (e) {
+                var ePos = {
+                    x: e.layerX || e.offsetX,
+                    y: e.layerY || e.offsetY
+                }
+                var imgData = context.getImageData(ePos.x, ePos.y, show.width, show.height).data;
+                //console.log(imgData)
+                var red = imgData[0];
+                var green = imgData[1];
+                var blue = imgData[2];
+
+                rgbStr = "rgb(" + red + "," + green + ',' + blue + ")";
+                //console.log(rgbStr);
+                cover.style.backgroundColor = rgbStr;
+
+                document.onmousemove = function (e) {
+                    var pos = {
+                        x: e.clientX,
+                        y: e.clientY
+                    }
+                    cur.style.left = pos.x + 'px';
+                    cur.style.top = pos.y + 'px';
+                };
+                document.onmouseup = function () {
+                    document.onmouseup = document.onmousemove = null;
+                }
+
+            }, false);
+
+
+        }
+    </script>
+
+</body>
+
+
+</html>
